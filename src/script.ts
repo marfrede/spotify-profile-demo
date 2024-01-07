@@ -5,7 +5,8 @@ import { LocalStorageService } from "./services/local-storage.service";
 const localStorageService = new LocalStorageService();
 
 async function main() {
-  const accessToken: string | undefined = await auth();
+  const accessToken: string | undefined =
+    localStorageService.get("spotify_access_token") ?? (await auth());
   if (accessToken) {
     loadAndProfileShow(accessToken);
   }
@@ -21,6 +22,7 @@ async function auth(): Promise<string | undefined> {
     redirectToAuthCodeFlow(clientId);
   } else {
     const accessToken = await getAccessToken(clientId, code);
+    localStorageService.set("spotify_access_token", accessToken);
     return accessToken;
   }
 }
