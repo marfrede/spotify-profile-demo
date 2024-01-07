@@ -5,11 +5,14 @@ import { LocalStorageService } from "./services/local-storage.service";
 const localStorageService = new LocalStorageService();
 
 async function main() {
-  auth();
+  const accessToken: string | undefined = await auth();
+  if (accessToken) {
+    loadAndProfileShow(accessToken);
+  }
 }
 main();
 
-async function auth() {
+async function auth(): Promise<string | undefined> {
   const clientId = "ce5672c90533410d9d0fe5b85304db0e";
   const params = new URLSearchParams(window.location.search);
   const code: string | null = params.get("code");
@@ -18,13 +21,16 @@ async function auth() {
     redirectToAuthCodeFlow(clientId);
   } else {
     const accessToken = await getAccessToken(clientId, code);
-    const profile = await fetchProfile(accessToken);
-    console.log(profile); // Profile data logs to console
-    populateUI(profile);
+    return accessToken;
   }
 }
 
-export async function redirectToAuthCodeFlow(clientId: string) {
+async function loadAndProfileShow(accessToken: string) {
+  const profile = await fetchProfile(accessToken);
+  populateUI(profile);
+}
+
+async function redirectToAuthCodeFlow(clientId: string) {
   const codeVerifier = generateRandomString(128);
   localStorageService.set("verifier", codeVerifier);
 
