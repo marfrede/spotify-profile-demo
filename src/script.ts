@@ -4,6 +4,8 @@ import { LocalStorageService } from "./services/local-storage.service";
 
 const localStorageService = new LocalStorageService();
 
+main();
+
 async function main() {
   const accessToken: string | undefined =
     localStorageService.get("spotify_access_token") ?? (await auth());
@@ -11,7 +13,6 @@ async function main() {
     loadAndProfileShow(accessToken);
   }
 }
-main();
 
 async function auth(): Promise<string | undefined> {
   const clientId = "ce5672c90533410d9d0fe5b85304db0e";
@@ -28,8 +29,12 @@ async function auth(): Promise<string | undefined> {
 }
 
 async function loadAndProfileShow(accessToken: string) {
-  const profile = await fetchProfile(accessToken);
-  populateUI(profile);
+  try {
+    const profile = await fetchProfile(accessToken);
+    populateUI(profile);
+  } catch (error) {
+    console.log("redirecting to access spotify again.");
+  }
 }
 
 async function redirectToAuthCodeFlow(clientId: string) {
@@ -70,16 +75,25 @@ export async function getAccessToken(
   return access_token;
 }
 
-async function fetchProfile(token: string): Promise<UserProfile> {
-  const result = await fetch("https://api.spotify.com/v1/me", {
+async function fetchProfile(token: string): Promise<UserProfile> | never {
+  const response = await fetch("https://api.spotify.com/v1/me", {
     method: "GET",
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  return await result.json();
+  console.log("response: ", response);
+
+  if (response.ok) {
+    return await response.json();
+  } else {
+    auth();
+    localStorageService.unset("spotify_access_token");
+    throw new Error("unauthorized");
+  }
 }
 
 function populateUI(profile: UserProfile) {
+  console.log("profile: ", profile);
   document.getElementById("displayName")!.innerText = profile.display_name;
   if (profile.images && profile.images[0]) {
     const profileImage = new Image(80, 80);

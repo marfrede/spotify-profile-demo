@@ -6,4 +6,8 @@ export class LocalStorageService {
   public set(key: string, value: string) {
     return localStorage.setItem(key, value);
   }
+
+  public unset(key: string) {
+    return localStorage.removeItem(key);
+  }
 }
